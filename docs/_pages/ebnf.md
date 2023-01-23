@@ -1,1 +1,4 @@
-Use EBNF.
+---
+permalink: /ebnf
+title: EBNF
+---
