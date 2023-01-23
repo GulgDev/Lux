@@ -2,6 +2,7 @@ remote_theme: "mmistakes/minimal-mistakes"
 minimal_mistakes_skin: "dark"
 plugins: ["jekyll-include-cache", "jekyll-feed"]
 title_separator: "-"
+name: "Gulg"
 logo: /assets/images/lux.png
 atom_feed:
   path: "/feed.xml"
