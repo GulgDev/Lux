@@ -7,5 +7,17 @@ title: Lux
 title_separator: "-"
 logo: /assets/images/lux.png
 
+include: ["_pages"]
+
 atom_feed:
   path: "/feed.xml"
+
+defaults:
+  # _docs
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "single"
+      sidebar:
+        nav: "pages"
