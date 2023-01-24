@@ -9,7 +9,6 @@ It can be used for creating custom languages, creating powerful tools, such as c
 ## Getting started
 
 To start working with Lux, let's create a simple data parser.
-```ebnf
---
-name
+```lua
+local test = 12
 ```
