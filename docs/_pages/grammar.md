@@ -1,6 +1,7 @@
 ---
 permalink: /grammar
 title: Grammar
+toc: true
 ---
 
 Lux uses LBNF (BNF variant) to describe the grammar.
@@ -21,7 +22,7 @@ Basic rule for LBNF is [pattern](https://www.lua.org/pil/20.2.html). Pattern mus
 To define rule simply do this:
 
 {% highlight lbnf %}
-rule name = your expression
+rule name = expression
 {% endhighlight %}
 
 Rule name must only contain letters, digits and underscores:
@@ -34,3 +35,7 @@ invalid rule name
 ### Root rule
 
 To define root rule (rule that will be used to match the whole input) use !:
+{% highlight lbnf %}
+!root rule name = expression
+{% endhighlight %}
+Rule name can be only defined **once**!
