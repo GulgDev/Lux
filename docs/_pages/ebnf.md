@@ -1,4 +1,0 @@
----
-permalink: /ebnf
-title: EBNF
----
