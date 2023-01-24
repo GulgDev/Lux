@@ -22,3 +22,5 @@ $base0d: #3777e6;
 $base0e: #ad00a1;
 $base0f: #cc6633;
 
+@import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}"; // skin
+@import "minimal-mistakes"; // main partials
