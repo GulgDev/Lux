@@ -5,9 +5,6 @@ search: false
 
 @charset "utf-8";
 
-@import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}"; // skin
-@import "minimal-mistakes"; // main partials
-
 $base00: #ffffff;
 $base01: #e0e0e0;
 $base02: #d0d0d0;
@@ -24,3 +21,6 @@ $base0c: #1faaaa;
 $base0d: #3777e6;
 $base0e: #ad00a1;
 $base0f: #cc6633;
+
+@import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}"; // skin
+@import "minimal-mistakes"; // main partials
