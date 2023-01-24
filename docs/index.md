@@ -8,8 +8,14 @@ It can be used for creating custom languages, creating powerful tools, such as c
 
 ## Getting started
 
-To start working with Lux, let's create a simple data parser.
+To start working with Lux, let's create a simple parser.
 
 {% highlight ebnf %}
-x = test
+-- Rules
+name = "Bob" | "Steve" -- Bob or Steve
+hello = "Hello," * name ["!"] -- "Hello," (indent) (Bob or Steve) (optional "!")
+bye = "Bye!"
+
+-- Root rule (must start with "!")
+!program = > { hello > } bye > -- Hello rule any number of times, and then bye rule. (> is multiline indent)
 {% endhighlight %}
