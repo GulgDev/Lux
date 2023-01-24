@@ -9,6 +9,11 @@ It can be used for creating custom languages, creating powerful tools, such as c
 ## Getting started
 
 To start working with Lux, let's create a simple data parser.
+
 {% highlight ebnf %}
+x = test
+{% endhighlight %}
+
+{% highlight lua %}
 x = test
 {% endhighlight %}
