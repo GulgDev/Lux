@@ -16,7 +16,7 @@ First thing you have to do is define grammar. You can do it two ways: using LBNF
 We don't have to do a lot of stuff:
 
 {%highlight lua %}
-local parser = Lux.generateParser([[
+local parser = Lux.generateParser([[ -- Generate grammar & parser
 name = "%u%l+" -- One uppercase letter and lowercase letters
 greetings = "Hello," * name -- "Hello,", indent and name
 !text = > { greetings > } -- Root rule: multiline indent, and any greetings with multiline indents.
@@ -26,7 +26,7 @@ greetings = "Hello," * name -- "Hello,", indent and name
 But if you want to define grammar manually you have to do this:
 
 {%highlight lua %}
-local grammar = Lux.Grammar.new()
+local grammar = Lux.Grammar.new() -- Create grammar
 grammar:defineRule("name", Lux.Grammar.pattern "%u%l+") -- One uppercase letter and lowercase letters
 grammar:defineRule("greetings", Lux.Grammar._and {
     Lux.Grammar.pattern "Hello,",
@@ -43,6 +43,8 @@ grammar:defineRule("text", Lux.Grammar._and {
     )
 }) -- Root rule: multiline indent, and any greetings with multiline indents.
 grammar.rootRule = "text"
+
+local parser = Lux.Parser.new(grammar) -- Create parser
 {%endhighlight%}
 
 ### Parsing
