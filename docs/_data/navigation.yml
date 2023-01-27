@@ -1,3 +1,5 @@
 pages:
+  - title: Tutorial
+    url: /tutorial
   - title: Grammar
     url: /grammar
