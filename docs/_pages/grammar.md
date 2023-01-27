@@ -4,9 +4,10 @@ title: Grammar
 toc: true
 ---
 
+## LBNF
+
 Lux uses LBNF (BNF variant) to describe the grammar.
 
-## Basics
 ### Defining rules
 
 To define rule simply do this:
@@ -82,3 +83,6 @@ Rule modifiers describe how many times the rule can be repeated:
 rule = [abc] -- optional (0 or 1)
 rule = {abc} -- repeation (0 or more)
 {% endhighlight %}
+
+## Advanced usage
+
