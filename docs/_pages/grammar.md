@@ -86,3 +86,14 @@ rule = {abc} -- repeation (0 or more)
 
 ## Advanced usage
 
+You can create rules manually using Grammar.\_or, Grammar.\_and, Grammar.repeation, Grammar.optional, Grammar.pattern, Grammar.include, Grammar.whitespace and Grammar.custom.
+
+### Custom rules
+
+You can define custom rules using Grammar.custom:
+
+{% highlight lua %}
+Grammar.custom(function(parser, elements)
+    return true, elements, #elements -- success, result, count
+end)
+{% endhighlight %}
