@@ -64,3 +64,5 @@ You can view the result using Lux.show:
 Lux.show(tokens)
 Lux.show(tree)
 {%endhighlight%}
+
+![Visualization result]({{ "/assets/images/visualizer.png" | relative_url }})
