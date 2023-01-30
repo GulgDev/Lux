@@ -254,8 +254,6 @@ function Grammar.parse(lbnf: string): Grammar
 			end
 		end
 	end)
-	require(script.Parent.Visualizer).showSyntaxTree(tree)
-	-- require(script.Parent.Visualizer).showGrammar(grammar)
 	return grammar
 end
 
