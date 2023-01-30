@@ -13,21 +13,21 @@ Lux uses LBNF (BNF variant) to describe the grammar.
 To define rule simply do this:
 
 {% highlight lbnf %}
-rule name = expression
+rule-name = expression
 {% endhighlight %}
 
-Rule name must only contain letters, digits and underscores:
+Rule name must only contain letters, digits, hyphens and underscores:
 {% highlight lbnf %}
-first_valid_rule_name
-invalid rule name
-2nd_valid_rule_name
+first-valid-rule-name
+invalid $rule name&
+2nd-valid-rule-name
 {% endhighlight %}
 
 ### Root rule
 
 To define root rule (rule that will be used to match the whole input) use !:
 {% highlight lbnf %}
-!root rule name = expression
+!root-rule-name = expression
 {% endhighlight %}
 Rule name can be only defined **once**!
 
