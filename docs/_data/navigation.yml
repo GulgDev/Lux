@@ -3,5 +3,7 @@ pages:
     url: /tutorial
   - title: Grammar
     url: /grammar
+  - title: Syntax tree browsing
+    url: /syntax-tree-browsing
   - title: Lux Lab
     url: https://www.roblox.com/games/12325709531/Lux-Lab
