@@ -84,6 +84,16 @@ rule = [abc] -- optional (0 or 1)
 rule = {abc} -- repeation (0 or more)
 {% endhighlight %}
 
+You can specify repeation count:
+{% highlight lbnf %}
+rule = {abc}<min..max>
+{% endhighlight %}
+
+{%highlight lbnf %}
+{abc} is same as {abc}<0..inf>
+[abc] is same as {abc}<0..1>
+{% endhighlight %}
+
 ## Advanced usage
 
 You can create rules manually using Grammar.\_or, Grammar.\_and, Grammar.repeation, Grammar.optional, Grammar.pattern, Grammar.include, Grammar.whitespace and Grammar.custom.
