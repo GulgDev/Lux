@@ -199,7 +199,7 @@ local function parseExpression(element: AST.Structure): GrammaticalRule
 		local min, max = 0, math.huge
 		local count = element:findChildrenByName("repeation-count")
 		if #count == 2 then
-			min, max = tonumber(count[1].value), tonumber(count[2].value)
+			min, max = tonumber(count[1].first.value), tonumber(count[2].first.value)
 		end
 		return Grammar.repeation(rule, min, max)
 	elseif name == "optional" then
