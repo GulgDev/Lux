@@ -26,8 +26,6 @@ local Visualizer = {
 		patternRuleIcon             = "rbxassetid://12302351956",
 		includeRuleIcon             = "rbxassetid://12302353820",
 		customRuleIcon              = "rbxassetid://12302354421",
-		multilineWhitespaceRuleIcon = "rbxassetid://12302353014",
-		inlineWhitespaceRuleIcon    = "rbxassetid://12302353479",
 		optionalRuleIcon            = "rbxassetid://12302352665",
 		repeationRuleIcon           = "rbxassetid://12302351597",
 		eofRuleIcon                 = "rbxassetid://12314811944"
@@ -40,12 +38,14 @@ local AST = require(script.Parent.AST)
 
 local ContentProvider = game:GetService("ContentProvider")
 local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 local Players = game:GetService("Players")
 
 local loaded = false
 
 local function load()
 	loaded = true
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
 	local preload = {}
 	for _, asset in Visualizer.assets do
 		table.insert(preload, asset)
@@ -391,13 +391,6 @@ function Visualizer.renderGrammaticalRule(container: Frame, indent: number, rule
 			Visualizer.assets.customRuleIcon,
 			name or "Custom",
 			"Custom rule"
-		)
-	elseif rule.class == "whitespace" then
-		Visualizer.createObject(container,
-			indent,
-			if rule.multiline then Visualizer.assets.multilineWhitespaceRuleIcon else Visualizer.assets.inlineWhitespaceRuleIcon,
-			name or if rule.multiline then "Multiline whitespace" else "Inline whitespace",
-			`Whitespace\n  Multiline: {if rule.multiline then "yes" else "no"}`
 		)
 	elseif rule.class == "eof" then
 		Visualizer.createObject(container,
