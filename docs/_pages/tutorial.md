@@ -34,6 +34,7 @@ grammar:defineRule("greetings", Lux.Grammar._and {
 }) -- "Hello," and name
 grammar:defineRule("text", Lux.Grammar.repeation(
     Lux.Grammar.include "greetings",
+    0, math.huge
 )) -- Root rule: any greetings.
 grammar.rootRule = "text"
 
