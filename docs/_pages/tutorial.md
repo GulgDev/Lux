@@ -18,8 +18,8 @@ We don't have to do a lot of stuff:
 {%highlight lua %}
 local parser = Lux.generateParser([[ -- Generate grammar & parser
 name = "%u%l+" -- One uppercase letter and lowercase letters
-greetings = "Hello," * name -- "Hello,", indent and name
-!text = > { greetings > } -- Root rule: multiline indent, and any greetings with multiline indents.
+greetings = "Hello," name -- "Hello," and name
+!text = { greetings } -- Root rule: any greetings.
 ]])
 {%endhighlight%}
 
@@ -30,18 +30,11 @@ local grammar = Lux.Grammar.new() -- Create grammar
 grammar:defineRule("name", Lux.Grammar.pattern "%u%l+") -- One uppercase letter and lowercase letters
 grammar:defineRule("greetings", Lux.Grammar._and {
     Lux.Grammar.pattern "Hello,",
-    Lux.Grammar.whitespace(false),
     Lux.Grammar.include "name"
-}) -- "Hello,", indent and name
-grammar:defineRule("text", Lux.Grammar._and {
-    Lux.Grammar.whitespace(true),
-    Lux.Grammar.repeation(
-        Lux.Grammar._and {
-            Lux.Grammar.include "greetings",
-            Lux.Grammar.whitespace(true)
-        }
-    )
-}) -- Root rule: multiline indent, and any greetings with multiline indents.
+}) -- "Hello," and name
+grammar:defineRule("text", Lux.Grammar.repeation(
+    Lux.Grammar.include "greetings",
+)) -- Root rule: any greetings.
 grammar.rootRule = "text"
 
 local parser = Lux.Parser.new(grammar) -- Create parser
