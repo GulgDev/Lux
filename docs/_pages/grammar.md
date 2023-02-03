@@ -50,15 +50,6 @@ first-rule = "pattern"
 second-rule = first-rule
 {% endhighlight %}
 
-### Whitespace
-
-You can define whitespace of any length using whitespace operators:
-
-{% highlight lbnf %}
-* -- inline whitespace
-> -- multiline whitespace
-{% endhighlight %}
-
 ### Groups
 
 You can group rules by using parentheses:
@@ -96,7 +87,7 @@ rule = {abc}<min..max>
 
 ## Advanced usage
 
-You can create rules manually using Grammar.\_or, Grammar.\_and, Grammar.repeation, Grammar.optional, Grammar.pattern, Grammar.include, Grammar.whitespace and Grammar.custom.
+You can create rules manually using Grammar.\_or, Grammar.\_and, Grammar.repeation, Grammar.optional, Grammar.pattern, Grammar.include and Grammar.custom.
 
 ### Custom rules
 
