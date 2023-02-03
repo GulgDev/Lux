@@ -4,7 +4,7 @@ Parser.__index = Parser
 local Grammar = require(script.Parent.Grammar)
 local AST = require(script.Parent.AST)
 
-local function match(parser: Parser, rule: Grammar.GrammaticalRule, data: { AST.Element }, offset: number, stack: { [GrammaticalRule]: boolean }): (boolean, { AST.Element }, number)
+local function match(parser: Parser, rule: Grammar.GrammaticalRule, data: { AST.Element }, offset: number, stack: { [Grammar.GrammaticalRule]: string }): (boolean, { AST.Element }, number)
 	if rule.class == "custom" then
 		if offset > #data then
 			return
@@ -57,7 +57,12 @@ local function match(parser: Parser, rule: Grammar.GrammaticalRule, data: { AST.
 		elseif rule.modifier == "repeation" then
 			local output = {}
 			local count = 0
+			local found = 0
 			while offset <= #data do
+				while data[offset].elementType == "whitespace" do
+					offset += 1
+					count += 1
+				end
 				local success, out, cnt = match(parser, rule.rule, data, offset, stack)
 				if success then
 					for _, element in out do
@@ -65,9 +70,20 @@ local function match(parser: Parser, rule: Grammar.GrammaticalRule, data: { AST.
 					end
 					offset += cnt
 					count += cnt
+					if cnt > 0 then
+						stack = {}
+					end
+					found += 1
+					if found >= rule.max then
+						break
+					end
 				else
 					break
 				end
+			end
+			if found < rule.min then
+				table.insert(output, AST.Error.new(data[offset], rule))
+				return false, output, count
 			end
 			return true, output, count
 		end
@@ -76,12 +92,19 @@ local function match(parser: Parser, rule: Grammar.GrammaticalRule, data: { AST.
 			local output = {}
 			local count = 0
 			for _, subrule in rule.rules do
+				while data[offset].elementType == "whitespace" do
+					offset += 1
+					count += 1
+				end
 				local success, out, cnt = match(parser, subrule, data, offset, stack)
 				for _, element in out do
 					table.insert(output, element)
 				end
 				offset += cnt
 				count += cnt
+				if cnt > 0 then
+					stack = {}
+				end
 				if not success then
 					return success, output, count
 				end
@@ -91,7 +114,6 @@ local function match(parser: Parser, rule: Grammar.GrammaticalRule, data: { AST.
 			local map = {}
 			for _, subrule in rule.rules do
 				if stack[subrule] then
-					stack[subrule] = false
 					continue
 				end
 				local substack = table.clone(stack)
@@ -112,7 +134,7 @@ local function match(parser: Parser, rule: Grammar.GrammaticalRule, data: { AST.
 			if max then
 				return true, max or {}, maxn
 			end
-			return false, { AST.Error.new(data[offset], "variant") }, 1
+			return false, { AST.Error.new(data[offset], rule) }, 1
 		end
 	end
 end
@@ -170,6 +192,9 @@ function Parser:tokenize(source: string): { AST.Token }
 			local whitespaceStop = AST.Position.new(offset, line, column)
 			table.insert(tokens, AST.Whitespace.new(whitespace, whitespaceStart, whitespaceStop))
 		end
+		if char == "" then
+			break
+		end
 		local matches = {}
 		for _, pattern in dict do
 			start, stop = source:find(`^{pattern}`, offset)
@@ -193,7 +218,25 @@ function Parser:tokenize(source: string): { AST.Token }
 			local stop = AST.Position.new(offset, line, column)
 			table.insert(tokens, AST.Token.new(match, start, stop))
 		else
-			break
+			local start = AST.Token.new(match, start, stop)
+			local got = source:sub(offset)
+			got:gsub(".", function()
+				if char == "\n" then
+					line += 1
+					column = 1
+				else
+					column += 1
+				end
+				offset += 1
+			end)
+			local stop = AST.Position.new(offset, line, column)
+			local gotToken = AST.Token.new(got, start, stop)
+			local patterns = {}
+			for _, pattern in dict do
+				table.insert(patterns, Grammar.pattern(pattern))
+			end
+			local expected = Grammar._or(patterns)
+			table.insert(tokens, AST.Error.new(gotToken, expected))
 		end
 	end
 	table.insert(tokens, AST.EOF.new(AST.Position.new(offset, line, column)))
@@ -210,7 +253,7 @@ function Parser.unescape(raw: string)
 		if char == "\\" then
 			char = raw:sub(index, index)
 			index += 1
-			if char == raw[1] then
+			if char == raw:sub(1, 1) then
 				unescaped ..= char
 			elseif char == "\\" then
 				unescaped ..= "\\"
