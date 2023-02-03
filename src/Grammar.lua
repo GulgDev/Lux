@@ -68,11 +68,13 @@ function Grammar._and(rules: { GrammaticalRule }?): RuleChain
 	}
 end
 
-function Grammar.repeation(rule: GrammaticalRule): RuleModifier
+function Grammar.repeation(rule: GrammaticalRule, min: number, max: number): RuleModifier
 	return {
 		class = "modifier",
 		modifier = "repeation",
-		rule = rule
+		rule = rule,
+		min = min,
+		max = max
 	}
 end
 
@@ -98,14 +100,7 @@ function Grammar.include(ruleName: string): Include
 	}
 end
 
-function Grammar.whitespace(multiline: boolean): Whitespace
-	return {
-		class = "whitespace",
-		multiline = multiline
-	}
-end
-
-function Grammar.custom(callback: (any, { AST.Element }) -> (boolean, { ASR.Element }, number)): Custom
+function Grammar.custom(callback: (any, { AST.Element }) -> (boolean, { AST.Element }, number)): Custom
 	return {
 		class = "custom",
 		match = callback
@@ -114,33 +109,26 @@ end
 
 local makeDictionaryForRules
 
-local function makeDictionaryForRule(dict: {}, map: {}, rule: GrammaticalRule, grammarRules: { [string]: GrammaticalRule }, stack: { [GrammaticalRule]: boolean })
+local function makeDictionaryForRule(dict: {}, map: {}, rule: GrammaticalRule, grammarRules: { [string]: GrammaticalRule })
 	if rule.class == "pattern" and not map[rule.pattern] then
 		map[rule.pattern] = true
 		table.insert(dict, rule.pattern)
 	elseif rule.class == "include" then
-		makeDictionaryForRule(dict, map, grammarRules[rule.ruleName], grammarRules, stack)
+		makeDictionaryForRule(dict, map, grammarRules[rule.ruleName], grammarRules)
 	elseif rule.class == "modifier" then
-		makeDictionaryForRule(dict, map, rule.rule, grammarRules, stack)
+		makeDictionaryForRule(dict, map, rule.rule, grammarRules)
 	elseif rule.class == "chain" then
-		if rule.operation == "and" then
-			makeDictionaryForRules(dict, map, rule.rules, grammarRules, stack)
-		elseif rule.operation == "or" then
-			for _, subrule in rule.rules do
-				if stack[subrule] then
-					continue
-				end
-				local substack = table.clone(stack)
-				substack[subrule] = true
-				makeDictionaryForRule(dict, map, subrule, grammarRules, substack)
-			end
-		end
+		makeDictionaryForRules(dict, map, rule.rules, grammarRules)
 	end
 end
 
-makeDictionaryForRules = function(dict: {}, map: {}, rules: { GrammaticalRule }, grammarRules: { [string]: GrammaticalRule }, stack: { [GrammaticalRule]: boolean })
+makeDictionaryForRules = function(dict: {}, map: {}, rules: { GrammaticalRule }, grammarRules: { [string]: GrammaticalRule })
 	for _, rule in rules do
-		makeDictionaryForRule(dict, map, rule, grammarRules, stack)
+		if map[rule] then
+			continue
+		end
+		map[rule] = true
+		makeDictionaryForRule(dict, map, rule, grammarRules)
 	end
 end
 
@@ -172,8 +160,8 @@ function Grammar:__index(key)
 		local map = {}
 		local dict = {}
 		local rules = self.rules
-		makeDictionaryForRules(dict, map, rules, rules, {})
-		return table.freeze(dict)
+		makeDictionaryForRules(dict, map, rules, rules)
+		return dict
 	else
 		return Grammar[key]
 	end
@@ -195,45 +183,73 @@ export type Grammar = typeof(Grammar.new())
 
 local parseExpressions
 
-local function parseExpression(expression: AST.Structure): GrammaticalRule
-	local first: AST.Structure = expression.first
-	local name = first.name
+local function parseExpression(element: AST.Structure): GrammaticalRule
+	local name = element.name
 	if name == "and-chain" then
-		local subexprs = first:findChildrenByName("expression")
-		local rules = parseExpressions(subexprs)
-		return Grammar._and(rules)
+		return Grammar._and(parseExpressions(element.children))
 	elseif name == "or-chain" then
-		local subexprs = first:findChildrenByName("expression")
-		local rules = parseExpressions(subexprs)
-		return Grammar._or(rules)
+		return Grammar._or(parseExpressions(element.children))
 	elseif name == "pattern" then
-		return Grammar.pattern(Parser.unescape(first.first.value))
+		return Grammar.pattern(Parser.unescape(element.first.value))
 	elseif name == "name" then
-		return Grammar.include(first.first.value)
-	elseif name == "inline-whitespace" then
-		return Grammar.whitespace(false)
-	elseif name == "multiline-whitespace" then
-		return Grammar.whitespace(true)
+		return Grammar.include(element.first.value)
 	elseif name == "repeation" then
-		local subexpr = first:findChildByName("expression")
-		local rule = parseExpression(subexpr)
-		return Grammar.repeation(rule)
+		local subexpr = element:findChildByName("expression")
+		local rule = parseExpression(subexpr.first)
+		local min, max = 0, math.huge
+		local count = element:findChildrenByName("repeation-count")
+		if #count == 2 then
+			min, max = tonumber(count[1].value), tonumber(count[2].value)
+		end
+		return Grammar.repeation(rule, min, max)
 	elseif name == "optional" then
-		local subexpr = first:findChildByName("expression")
-		local rule = parseExpression(subexpr)
+		local subexpr = element:findChildByName("expression")
+		local rule = parseExpression(subexpr.first)
 		return Grammar.optional(rule)
 	elseif name == "group" then
-		local subexpr = first:findChildByName("expression")
-		return parseExpression(subexpr)
+		local subexpr = element:findChildByName("expression")
+		return parseExpression(subexpr.first)
 	end
 end
 
-parseExpressions = function(expressions: { AST.Structure }): { GrammaticalRule }
+parseExpressions = function(elements: { AST.Element }): { GrammaticalRule }
 	local rules = {}
-	for _, expression in expressions do
-		table.insert(rules, parseExpression(expression))
+	for _, element in elements do
+		if element.elementType == "structure" then
+			table.insert(rules, parseExpression(element))
+		end
 	end
 	return rules
+end
+
+local validateRules
+
+local function validateRule(map: { [GrammaticalRule]: boolean }, rule: GrammaticalRule, grammarRules: { [string]: GrammaticalRule })
+	if rule.class == "pattern" then
+		if not pcall(string.find, "", rule.pattern) then
+			error(`Invalid pattern: {Parser.escape(rule.pattern)}`)
+		end
+	elseif rule.class == "include" then
+		local target = grammarRules[rule.ruleName]
+		if target == nil then
+			error(`Rule "{rule.ruleName}" is not defined`)
+		end
+		validateRule(map, target, grammarRules)
+	elseif rule.class == "modifier" then
+		validateRule(map, rule.rule, grammarRules)
+	elseif rule.class == "chain" then
+		validateRules(map, rule.rules, grammarRules)
+	end
+end
+
+validateRules = function(map: { [GrammaticalRule]: boolean }, rules: { GrammaticalRule }, grammarRules: { [string]: GrammaticalRule })
+	for _, rule in rules do
+		if map[rule] then
+			continue
+		end
+		map[rule] = true
+		validateRule(map, rule, grammarRules)
+	end
 end
 
 local lbnfParser
@@ -241,10 +257,10 @@ local lbnfParser
 function Grammar.parse(lbnf: string): Grammar
 	local grammar = Grammar.new()
 	local tree: AST.SyntaxTree = lbnfParser:parse(lbnf)
-	tree:on("rule-definition", function(definition)
+	tree:forEach("rule-definition", function(definition)
 		local name = definition:findChildByName("name").first.value
 		local expression = definition:findChildByName("expression")
-		grammar:defineRule(name, parseExpression(expression))
+		grammar:defineRule(name, parseExpression(expression.first))
 		local first = definition.first
 		if first.elementType == "token" and first.value == "!" then
 			if grammar.rootRule then
@@ -254,6 +270,7 @@ function Grammar.parse(lbnf: string): Grammar
 			end
 		end
 	end)
+	validateRules({}, grammar.rules, grammar.rules)
 	return grammar
 end
 
@@ -264,23 +281,33 @@ function Grammar.importAll()
 	
 	local lbnfGrammar = Grammar.new()
 	lbnfGrammar:defineRule("grammar", Grammar._and {
-		Grammar.include("comments"),
+		Grammar.repeation(
+			Grammar._and {
+				Grammar.include "comment"
+			},
+			0, math.huge
+		),
 		Grammar.repeation(
 			Grammar._and {
 				Grammar.include "rule-definition",
-				Grammar.include "comments"
-			}
+				Grammar.repeation(
+					Grammar._and {
+						Grammar.include "comment"
+					},
+					0, math.huge
+				)
+			},
+			0, math.huge
 		)
 	})
 	lbnfGrammar:defineRule("rule-definition", Grammar._and {
 		Grammar.optional(Grammar.pattern "!"),
 		Grammar.include "name",
-		Grammar.whitespace(false),
 		Grammar.pattern "=",
-		Grammar.whitespace(false),
-		Grammar.include "expression"
+		Grammar.include "expression",
+		Grammar.pattern ";"
 	})
-	lbnfGrammar:defineRule("name", Grammar.pattern "[A-Za-z0-9-_]+")
+	lbnfGrammar:defineRule("name", Grammar.pattern "[A-Za-z][A-Za-z0-9-_]*")
 	lbnfGrammar:defineRule("expression", Grammar._or {
 		Grammar.include "name",
 		Grammar.include "pattern",
@@ -288,72 +315,76 @@ function Grammar.importAll()
 		Grammar.include "or-chain",
 		Grammar.include "repeation",
 		Grammar.include "optional",
-		Grammar.include "group",
-		Grammar.include "inline-whitespace",
-		Grammar.include "multiline-whitespace"
+		Grammar.include "group"
 	})
 	lbnfGrammar:defineRule("pattern", Grammar.pattern "([\"']).-[^\\]%1")
 	lbnfGrammar:defineRule("and-chain", Grammar._and {
-		Grammar.include "expression",
-		Grammar.whitespace(false),
-		Grammar.include "expression",
 		Grammar.repeation(
-			Grammar._and {
-				Grammar.whitespace(false),
-				Grammar.include "expression"
-			}
+			Grammar._or {
+				Grammar.include "name",
+				Grammar.include "pattern",
+				Grammar.include "repeation",
+				Grammar.include "optional",
+				Grammar.include "group"
+			},
+			0, math.huge
 		)
 	})
 	lbnfGrammar:defineRule("or-chain", Grammar._and {
-		Grammar.include "expression",
-		Grammar.whitespace(false),
-		Grammar.pattern "|",
-		Grammar.whitespace(false),
-		Grammar.include "expression",
+		Grammar._or {
+			Grammar.include "name",
+			Grammar.include "pattern",
+			Grammar.include "and-chain",
+			Grammar.include "repeation",
+			Grammar.include "optional",
+			Grammar.include "group"
+		},
 		Grammar.repeation(
 			Grammar._and {
-				Grammar.whitespace(false),
 				Grammar.pattern "|",
-				Grammar.whitespace(false),
-				Grammar.include "expression"
-			}
+				Grammar._or {
+					Grammar.include "name",
+					Grammar.include "pattern",
+					Grammar.include "and-chain",
+					Grammar.include "repeation",
+					Grammar.include "optional",
+					Grammar.include "group"
+				}
+			},
+			1, math.huge
 		)
 	})
 	lbnfGrammar:defineRule("repeation", Grammar._and {
 		Grammar.pattern "{",
-		Grammar.whitespace(false),
 		Grammar.include "expression",
-		Grammar.whitespace(false),
-		Grammar.pattern "}"
+		Grammar.pattern "}",
+		Grammar.optional(
+			Grammar._and {
+				Grammar.pattern "<",
+				Grammar.include "repeation-count",
+				Grammar.pattern "%.%.",
+				Grammar.include "repeation-count",
+				Grammar.pattern ">"
+			}
+		)
+	})
+	lbnfGrammar:defineRule("repeation-count", Grammar._or {
+		Grammar.pattern "inf",
+		Grammar.pattern "%d+"
 	})
 	lbnfGrammar:defineRule("optional", Grammar._and {
 		Grammar.pattern "%[",
-		Grammar.whitespace(false),
 		Grammar.include "expression",
-		Grammar.whitespace(false),
 		Grammar.pattern "%]"
 	})
 	lbnfGrammar:defineRule("group", Grammar._and {
 		Grammar.pattern "%(",
-		Grammar.whitespace(false),
 		Grammar.include "expression",
-		Grammar.whitespace(false),
 		Grammar.pattern "%)"
 	})
-	lbnfGrammar:defineRule("inline-whitespace", Grammar.pattern "*")
-	lbnfGrammar:defineRule("multiline-whitespace", Grammar.pattern ">")
 	lbnfGrammar:defineRule("comment", Grammar._or {
 		Grammar.pattern "%-%-[^\n]+",
 		Grammar.pattern "%-%-%[(=*)%[.-%]%1%]"
-	})
-	lbnfGrammar:defineRule("comments", Grammar._and {
-		Grammar.whitespace(true),
-		Grammar.repeation(
-			Grammar._and {
-				Grammar.include "comment",
-				Grammar.whitespace(true)
-			}
-		)
 	})
 	lbnfGrammar.rootRule = "grammar"
 	
