@@ -13,7 +13,7 @@ Lux uses LBNF (BNF variant) to describe the grammar.
 To define rule simply do this:
 
 {% highlight lbnf %}
-rule-name = expression
+rule-name = expression;
 {% endhighlight %}
 
 Rule name must only contain letters, digits, hyphens and underscores:
@@ -27,7 +27,7 @@ invalid $rule name&
 
 To define root rule (rule that will be used to match the whole input) use !:
 {% highlight lbnf %}
-!root-rule-name = expression
+!root-rule-name = expression;
 {% endhighlight %}
 Rule name can be only defined **once**!
 
@@ -46,8 +46,8 @@ Basic rule for LBNF is [pattern](https://www.lua.org/pil/20.2.html). Pattern mus
 You can include rules by name and use them in other rules:
 
 {% highlight lbnf %}
-first-rule = "pattern"
-second-rule = first-rule
+first-rule = "pattern";
+second-rule = first-rule;
 {% endhighlight %}
 
 ### Groups
@@ -55,7 +55,7 @@ second-rule = first-rule
 You can group rules by using parentheses:
 
 {% highlight lbnf %}
-rule = (a | b) c
+rule = (a | b) c;
 {% endhighlight %}
 
 ### Chains
@@ -63,21 +63,21 @@ rule = (a | b) c
 Chains are rule sets that can be used to define a rule sequence or a rule variants.
 
 {% highlight lbnf %}
-rule = "a" | "b" -- "or" chain
-rule = "a" "b" -- "and" chain
+rule = "a" | "b"; -- "or" chain
+rule = "a" "b"; -- "and" chain
 {% endhighlight %}
 
 ### Modifiers
 
 Rule modifiers describe how many times the rule can be repeated:
 {% highlight lbnf %}
-rule = [abc] -- optional (0 or 1)
-rule = {abc} -- repeation (0 or more)
+rule = [abc]; -- optional (0 or 1)
+rule = {abc}; -- repeation (0 or more)
 {% endhighlight %}
 
 You can specify repeation count:
 {% highlight lbnf %}
-rule = {abc}<min..max>
+rule = {abc}<min..max>;
 {% endhighlight %}
 
 {%highlight lbnf %}
